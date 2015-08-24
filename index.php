@@ -13,6 +13,7 @@
 	//Set Variables...
 	global $dbc, $parser, $layout, $main, $settings, $core;
 	$core = new core($settings, $version, $dbc, $layout, $parser);
+	set_error_handler(array($core, "errHandlr"));
 	$admin = new admin($settings, $version, $dbc, $layout, $core, $parser);
 	$page = new pageGeneration($settings, $version, $dbc, $layout, $core, $parser, $admin);
 	$page->Generate();
