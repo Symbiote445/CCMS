@@ -1,5 +1,5 @@
 <?php
-	error_reporting(E_ALL); ini_set('display_errors', 1);
+	error_reporting(E_ALL);
 	define("CCore", true);
 	session_start();
 	//Load files...
@@ -13,7 +13,9 @@
 	//Set Variables...
 	global $dbc, $parser, $layout, $main, $settings, $core;
 	$core = new core($settings, $version, $dbc, $layout, $parser);
-	set_error_handler(array($core, "errHandlr"));
+	set_error_handler(array($core, 'errHandlr'));
+	set_exception_handler(array($core, 'errHandlr'));
+	register_shutdown_function(array($core, 'fatalErrHandlr'));
 	$admin = new admin($settings, $version, $dbc, $layout, $core, $parser);
 	$page = new pageGeneration($settings, $version, $dbc, $layout, $core, $parser, $admin);
 	$page->Generate();

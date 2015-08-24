@@ -732,10 +732,28 @@ class core {
 		$this->parser = $parser;
 
 	}
-	public function errHandlr($errno, $errstr, $errfile, $errline){
+	public function errHandlr(){
+		$errstrArr = error_get_last();
+		$errno = $errstrArr['type'];
+		$errstr = $errstrArr['message'];
+		$errfile = $errstrArr['file'];
+		$errline = $errstrArr['line'];
 		$query = "INSERT INTO `err` (`errno`, `errstr`, `errfile`, `errline`) VALUES ('$errno', '$errstr', '$errfile', '$errline')";
 		mysqli_query($this->dbc, $query);
-		die("<b>There was an error. Check the database.</b>");
+		//die("<b>There was an error. Check the database.</b>");
+		print_r($errstrArr);
+	}
+	public function fatalErrHandlr(){
+		$errstrArr = error_get_last();
+		$errno = mysqli_real_escape_string($this->dbc, trim($errstrArr['type']));
+		$errstr = mysqli_real_escape_string($this->dbc, trim($errstrArr['message']));
+		$errfile = mysqli_real_escape_string($this->dbc, trim($errstrArr['file']));
+		$errline = mysqli_real_escape_string($this->dbc, trim($errstrArr['line']));
+		$query = "INSERT INTO `err` (`errno`, `errstr`, `errfile`, `errline`) VALUES ('$errno', '$errstr', '$errfile', '$errline')";
+		mysqli_query($this->dbc, $query);
+		var_dump(mysqli_error($this->dbc));
+		echo("<b>There was an error. Check the database.</b>");
+		return true;
 	}
 	public function notifBar(){
 		if(isset($_SESSION['uid'])){
