@@ -13,8 +13,8 @@
 	//Set Variables...
 	global $dbc, $parser, $layout, $main, $settings, $core;
 	$core = new core($settings, $version, $dbc, $layout, $parser);
-	set_error_handler(array($core, 'errHandlr'));
-	set_exception_handler(array($core, 'errHandlr'));
+	//set_error_handler(array($core, 'fatalErrHandlr'));
+	//set_exception_handler(array($core, 'fatalErrHandlr'));
 	register_shutdown_function(array($core, 'fatalErrHandlr'));
 	$admin = new admin($settings, $version, $dbc, $layout, $core, $parser);
 	$page = new pageGeneration($settings, $version, $dbc, $layout, $core, $parser, $admin);

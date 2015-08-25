@@ -344,12 +344,26 @@ class admin {
 			echo '<div class="shadowbar">Please enable developer mode.</div>';
 		}
 	}
+	public function viewError(){
+		if(!isset($f)){
+			$f = 0;
+		}
+		$query = "SELECT * FROM `err` ORDER BY `id` DESC LIMIT 0,10";
+		$data = mysqli_query($this->dbc, $query);
+		echo '<div class="shadowbar"><table class="table"><thead><th>Errors</th></thead><tbody>';
+		while($row = mysqli_fetch_array($data)){
+			echo '<tr><td>';
+			echo '<b><span style="color:yellow;">'.$this->core->FriendlyErrorType($row['errno']).'</span></b> <span style="color:red;">'.$row['errstr'].'</span> <span style="color:white;">in</span> <span style="color:yellow;">'.$row['errfile'].'</span> <span style="color:white;">on line</span> <span style="color:red;">'.$row['errline'].'</span>';
+			echo '</td></tr>';
+		}
+		echo '</tbody></table></div>';
+	}
 	public function acp(){
 		if(!$this->core->verify("core.*") || $this->core->verify("core.mod")){
 			die("Insufficient Permissions");
 		}
 		echo '<div class="shadowbar">
-		<a class="Link LButton" href="/acp">Admin </a><a class="Link LButton" href="/acp/mode/users">Users </a><a class="Link LButton" href="/acp/mode/groups">Groups </a><a class="Link LButton" href="/acp/mode/banlist">Banned Users</a><a class="Link LButton" href="/acp/mode/Settings">Settings </a><a class="Link LButton" href="/acp/mode/stats">Record Stats</a><a class="Link LButton" href="/acp/mode/counter">View Counter</a>';
+		<a class="Link LButton" href="/acp">Admin </a><a class="Link LButton" href="/acp/mode/errors">Errors </a><a class="Link LButton" href="/acp/mode/users">Users </a><a class="Link LButton" href="/acp/mode/groups">Groups </a><a class="Link LButton" href="/acp/mode/banlist">Banned Users</a><a class="Link LButton" href="/acp/mode/Settings">Settings </a><a class="Link LButton" href="/acp/mode/stats">Record Stats</a><a class="Link LButton" href="/acp/mode/counter">View Counter</a>';
 		if($this->settings['dev'] == '1'){
 			echo '<a class="Link LButton" href="/acp/mode/addmodule">Add Module</a><a class="Link LButton" href="/acp/mode/editModule">Edit Module</a><a class="Link LButton" href="/acp/mode/modules">Module Settings </a><a class="Link LButton" href="/acp/mode/uploadMod">Upload Module </a><a class="Link LButton" href="/acp/mode/layout">Advanced Layout Editor</a>';
 		}
@@ -359,6 +373,9 @@ class admin {
 		if(isset($_GET['mode'])){
 			if($_GET['mode'] == 'users'){
 				$this->usr();
+			}
+			if($_GET['mode'] == 'errors'){
+				$this->viewError();
 			}
 			if($_GET['mode'] == 'uploadMod'){
 				$this->uploadModule();
@@ -641,14 +658,6 @@ EOD
 		}
 
 		if(!isset($_GET['mode'])){
-			$localVersion = $this->version['core'];
-			$remoteVersion = 'http://cheesecakebb.org/versions/core.dat';
-			if(!$this->core->Version($localVersion, $remoteVersion)){
-				echo '<div class="shadowbar">
-Your Cheesecake Core version is out of date.
-</div>
-';
-			}
 			echo '
 <div class="shadowbar">
 <table class="table">
@@ -732,6 +741,7 @@ class core {
 		$this->parser = $parser;
 
 	}
+	/*
 	public function errHandlr(){
 		$errstrArr = error_get_last();
 		$errno = $errstrArr['type'];
@@ -743,18 +753,56 @@ class core {
 		//die("<b>There was an error. Check the database.</b>");
 		print_r($errstrArr);
 	}
+	*/
 	public function fatalErrHandlr(){
 		$errstrArr = error_get_last();
+		if($errno > 0){
 		$errno = mysqli_real_escape_string($this->dbc, trim($errstrArr['type']));
 		$errstr = mysqli_real_escape_string($this->dbc, trim($errstrArr['message']));
 		$errfile = mysqli_real_escape_string($this->dbc, trim($errstrArr['file']));
 		$errline = mysqli_real_escape_string($this->dbc, trim($errstrArr['line']));
 		$query = "INSERT INTO `err` (`errno`, `errstr`, `errfile`, `errline`) VALUES ('$errno', '$errstr', '$errfile', '$errline')";
 		mysqli_query($this->dbc, $query);
-		var_dump(mysqli_error($this->dbc));
+		//var_dump(mysqli_error($this->dbc));
 		echo("<b>There was an error. Check the database.</b>");
-		return true;
+		//return true;
 	}
+	}
+	public function FriendlyErrorType($type){
+        switch($type){
+            case E_ERROR: // 1 //
+                return 'E_ERROR';
+            case E_WARNING: // 2 //
+                return 'E_WARNING';
+            case E_PARSE: // 4 //
+                return 'E_PARSE';
+            case E_NOTICE: // 8 //
+                return 'E_NOTICE';
+            case E_CORE_ERROR: // 16 //
+                return 'E_CORE_ERROR';
+            case E_CORE_WARNING: // 32 //
+                return 'E_CORE_WARNING';
+            case E_CORE_ERROR: // 64 //
+                return 'E_COMPILE_ERROR';
+            case E_CORE_WARNING: // 128 //
+                return 'E_COMPILE_WARNING';
+            case E_USER_ERROR: // 256 //
+                return 'E_USER_ERROR';
+            case E_USER_WARNING: // 512 //
+                return 'E_USER_WARNING';
+            case E_USER_NOTICE: // 1024 //
+                return 'E_USER_NOTICE';
+            case E_STRICT: // 2048 //
+                return 'E_STRICT';
+            case E_RECOVERABLE_ERROR: // 4096 //
+                return 'E_RECOVERABLE_ERROR';
+            case E_DEPRECATED: // 8192 //
+                return 'E_DEPRECATED';
+            case E_USER_DEPRECATED: // 16384 //
+                return 'E_USER_DEPRECATED';
+            }
+        return $type;
+    }
 	public function notifBar(){
 		if(isset($_SESSION['uid'])){
 			echo '</div><div class="col-3"><div class="shadowbar">';
