@@ -1,18 +1,26 @@
 <?php
 //Page Generation
 class pageGeneration {
-	public function __construct($settings, $version, $dbc, $layout, $core, $parser, $admin){
+	public function __construct($settings, $version, $dbc, $layout, $parser, $modules, $cms_vars){
 		$this->settings = $settings;
 		$this->version = $version;
 		$this->dbc = $dbc;
 		$this->layout = $layout;
-		$this->core = $core;
 		$this->parser = $parser;
+		$this->modules = $modules;
+		$this->vars = $cms_vars;
+		$core = new core($this->settings, $this->version, $this->dbc, $this->layout, $this->parser, $this->modules, $this->vars);
+		//set_error_handler(array($core, 'fatalErrHandlr'));
+		//set_exception_handler(array($core, 'fatalErrHandlr'));
+		$this->core = $core;
+		$this->core->GenerationModifiers($this->settings, $this->modules, $this->vars);
+		register_shutdown_function(array($core, 'fatalErrHandlr'));
+		$admin = new admin($this->settings, $this->version, $this->dbc, $this->layout, $this->core, $this->parser, $this->vars);
 		$this->admin = $admin;
 
 	}
 	public function Generate(){
-	if(isset($_GET['action'])){
+		if(isset($_GET['action'])){
 			if($_GET['action'] === 'logout'){
 				$this->core->logout();
 			}
@@ -28,7 +36,7 @@ class pageGeneration {
 		$this->parser->SetSmileyURL("http://".$this->settings['b_url']."/include/images/smileys");
 		$this->core->checkLogin();
 		echo sprintf($this->layout['header-begin'], $this->settings['site_name'], $this->settings['style'], $this->settings['style'], $this->settings['style'], $this->settings['style'], $this->settings['site_name']);
-		$this->core->loadModule("nav");
+		$this->core->loadModule("nav", $this->modules);
 		print($this->layout['header-end']);
 		$this->core->counter();
 		print($this->layout['donate-begin']);
@@ -45,6 +53,7 @@ class pageGeneration {
 		//$this->core->sidebar();
 		$this->core->securityAgent("check");
 			if(!isset($_GET['action'])){
+				echo $this->settings['home_display'];
 				if($this->settings['home_display'] == 'none' || $this->settings['home_display'] == 'about'){
 					echo '<div class="shadowbar">';
 					$parsed = $this->parser->parse($this->settings['about']);
@@ -52,7 +61,7 @@ class pageGeneration {
 					echo '</div>';
 				}
 			}
-		$this->core->loadModule("initialLoad");
+		$this->core->loadModule("initialLoad", $this->modules);
 		if(isset($_GET['action'])){
 			if($_GET['action'] == 'login'){
 				if(isset($error)){
@@ -92,7 +101,7 @@ class pageGeneration {
 			}
 		}
 		$this->core->onlineList();
-		$this->core->loadModule("initialLoad");
+		$this->core->loadModule("initialLoad", $this->modules);
 		$this->core->notifBar();
 		echo sprintf($this->layout['footer'], $this->settings['b_url'], $this->settings['site_name'], $this->version['core']);
 	}

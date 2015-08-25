@@ -8,13 +8,14 @@ if(!defined("CCore")){
 	die("Access Denied.");
 }
 class admin {
-	public function __construct($settings, $version, $dbc, $layout, $core, $parser){
+	public function __construct($settings, $version, $dbc, $layout, $core, $parser, $cms_vars){
 		$this->settings = $settings;
 		$this->version = $version;
 		$this->dbc = $dbc;
 		$this->layout = $layout;
 		$this->core = $core;
 		$this->parser = $parser;
+		$this->vars = $cms_vars;
 
 	}
 	public function array2php($arr, $arrName){
@@ -690,6 +691,17 @@ Database
 '.$this->settings['db'].'
 </td>
 </tr>
+<tr>
+<td>
+CMS Variables
+</td>
+<td>';
+foreach($this->vars as $var => $value){
+	echo $var . ': ' . $value . '<br />';
+}
+echo '
+</td>
+</tr>
 
 </tbody>
 </table>
@@ -733,12 +745,14 @@ echo '</table></div>
 
 
 class core {
-	public function __construct($settings, $version, $dbc, $layout, $parser){
+	public function __construct($settings, $version, $dbc, $layout, $parser, $modules, $cms_vars){
 		$this->settings = $settings;
 		$this->version = $version;
 		$this->dbc = $dbc;
 		$this->layout = $layout;
 		$this->parser = $parser;
+		$this->modules = $modules;
+		$this->vars = $cms_vars;
 
 	}
 	/*
@@ -756,7 +770,7 @@ class core {
 	*/
 	public function fatalErrHandlr(){
 		$errstrArr = error_get_last();
-		if($errno > 0){
+		if($errstrArr['type'] > 0){
 		$errno = mysqli_real_escape_string($this->dbc, trim($errstrArr['type']));
 		$errstr = mysqli_real_escape_string($this->dbc, trim($errstrArr['message']));
 		$errfile = mysqli_real_escape_string($this->dbc, trim($errstrArr['file']));
@@ -803,6 +817,39 @@ class core {
             }
         return $type;
     }
+		public function GenerationModifiers(&$settings, &$modules, &$cms_vars){      //<-- changed
+
+		    $query = "SELECT `modifiers` FROM `settings`";
+		    $data = mysqli_query($this->dbc, $query);
+		    $row = mysqli_fetch_array($data);
+		    $modifiers = $row['modifiers'];
+		    $modifiers = explode(";", $modifiers);
+		    foreach($modifiers as $modifier){
+		        $mod = explode(".", $modifier);
+		        $control = $mod[0];
+		        $setting = $mod[1];
+		        switch($control){
+		            case "moduleOff":
+		                $modules[$setting]['enabled'] = 0;
+		                break;
+								case "moduleOn":
+										$modules[$setting]['enabled'] = 1;
+										break;
+		            case "settingsChange":
+		                $s = explode(":", $setting);
+		                $toChange = $s[0];
+		                $changeTo = $s[1];
+		                $settings[$toChange] = $changeTo;      //<-- changed
+		                break;
+								case "varSet":
+										$s = explode(":", $setting);
+										//print_r($cms_vars);
+										$cms_vars[$s[0]] = $s[1];
+										//print_r($cms_vars);
+										break;
+		        }
+		    }
+		}
 	public function notifBar(){
 		if(isset($_SESSION['uid'])){
 			echo '</div><div class="col-3"><div class="shadowbar">';
@@ -859,12 +906,12 @@ class core {
 				$row = mysqli_fetch_array($data);
 				$uid = $_SESSION['uid'];
 				echo sprintf($this->layout['sidebar-core'], $row['username'], $row['username']);
-					$this->loadModule("sidebar");
+					$this->loadModule("sidebar", $this->modules);
 					if($this->verify("core.*")){
 						echo sprintf($this->layout['sidebarLink'], "/acp", "Admin Panel");
 						}
 					if($this->verify("core.*") || $this->verify("core.mod")){
-						$this->loadModule("acp");
+						$this->loadModule("acp", $this->modules);
 					}
 					//echo '</div>';
 				}
@@ -945,9 +992,8 @@ class core {
 		}
 	}
 
-	public function loadModule($operator){
+	public function loadModule($operator, &$modules){
 		if(isset($operator)){
-			require("modules.php");
 			$option = $operator;
 			if($option === 'nav'){
 				foreach($modules as $name => $module) if ($module['enabled']) {
@@ -963,7 +1009,6 @@ class core {
 				$layout = $this->layout;
 				$core = $this;
 				$parser = $this->parser;
-				global $settings, $version, $dbc, $layout, $core, $parser;
 				foreach($modules as $name => $module) if ($module['enabled']) {
 					$dir = strtolower($module['description']);
 					require_once('include/scripts/'.$dir.'/'.$module['link']);
