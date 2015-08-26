@@ -1,0 +1,13 @@
+{
+  "mName":"Gallery",
+  "mFile":"gallery.class.php",
+  "mNav":"1",
+  "mClass":"gallery",
+  "mStats":"true",
+  "mAdmin":"1",
+  "mPerms":"gallery.upload",
+  "mHref":"/viewgallery",
+  "mSidebar":"",
+  "mSBD":"Add Picture to Gallery",
+  "mACP":"/uploadphoto"
+}

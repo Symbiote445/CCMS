@@ -1,0 +1,13 @@
+{
+  "mName":"Forums",
+  "mFile":"forum.class.php",
+  "mNav":"1",
+  "mClass":"forums",
+  "mStats":"true",
+  "mAdmin":"0",
+  "mPerms":"forums.post",
+  "mHref":"/forums",
+  "mSidebar":"/posttopic",
+  "mSBD":"Post Topic",
+  "mACP":""
+}

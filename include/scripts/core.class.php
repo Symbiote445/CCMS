@@ -991,47 +991,6 @@ class core {
 			return false;
 		}
 	}
-
-	public function loadModule($operator, &$modules){
-		if(isset($operator)){
-			$option = $operator;
-			if($option === 'nav'){
-				foreach($modules as $name => $module) if ($module['enabled']) {
-					if($module['nav'] == 1){
-						echo '<li><a href="'.$module['href'].'">'.$module['description'].'</a></li>';
-					}
-				}
-			}
-			if($option === 'initialLoad'){
-				$settings = $this->settings;
-				$version = $this->version;
-				$dbc = $this->dbc;
-				$layout = $this->layout;
-				$core = $this;
-				$parser = $this->parser;
-				foreach($modules as $name => $module) if ($module['enabled']) {
-					$dir = strtolower($module['description']);
-					require_once('include/scripts/'.$dir.'/'.$module['link']);
-				}
-			}
-			if($option === 'editModule'){
-				foreach($modules as $name => $module) if ($module['enabled']) {
-					return '<option value="include/scripts/'.$module['link'].'">'.$module['link'].'</option>';
-				}
-			}
-			if($option === 'sidebar'){
-				foreach($modules as $name => $module) if ($module['enabled'] && ($module['admin'] == '0')) {
-					echo '<li class="navList-item"><a class="btn btn-default width100" href="'.$module['sidebar'].'">'.$module['sidebarDesc'].'</a></li>';
-				}
-			}
-			if($option === 'acp'){
-				foreach($modules as $name => $module) if ($module['enabled'] && ($module['admin'] == '1')) {
-					if($this->verify("core.*") || $this->verify($module['perms']))
-					echo '<li class="navList-item"><a class="btn btn-default width100" href="'.$module['acp'].'">'.$module['sidebarDesc'].'</a></li>';
-				}
-			}
-		}
-	}
 	public function logout(){
 		session_destroy();
 		unset($_COOKIE['ID']);

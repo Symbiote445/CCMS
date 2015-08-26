@@ -1,0 +1,13 @@
+{
+  "mName":"Groups",
+  "mFile":"group.class.php",
+  "mNav":"1",
+  "mClass":"groups",
+  "mStats":"false",
+  "mAdmin":"0",
+  "mPerms":"forums.post",
+  "mHref":"/forums",
+  "mSidebar":"/groupPost",
+  "mSBD":"Post Group Topic",
+  "mACP":""
+}

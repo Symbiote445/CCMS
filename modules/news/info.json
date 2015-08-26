@@ -1,0 +1,13 @@
+{
+  "mName":"News",
+  "mFile":"news.class.php",
+  "mNav":"1",
+  "mClass":"news",
+  "mStats":"false",
+  "mAdmin":"0",
+  "mPerms":"news.write",
+  "mHref":"/news",
+  "mSidebar":"/postNews",
+  "mSBD":"Post News",
+  "mACP":""
+}

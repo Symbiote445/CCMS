@@ -1,0 +1,13 @@
+{
+  "mName":"Pages",
+  "mFile":"pages.class.php",
+  "mNav":"1",
+  "mClass":"pages",
+  "mStats":"true",
+  "mAdmin":"1",
+  "mPerms":"pages.addPage",
+  "mHref":"/pages",
+  "mSidebar":"",
+  "mSBD":"Add Page",
+  "mACP":"/pages/mode/addpage"
+}
