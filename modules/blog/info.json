@@ -1,0 +1,13 @@
+{
+  "mName":"Blog",
+  "mFile":"blog.class.php",
+  "mNav":"1",
+  "mClass":"blog",
+  "mStats":"true",
+  "mAdmin":"1",
+  "mPerms":"blog.write",
+  "mHref":"/Blog",
+  "mSidebar":"",
+  "mSBD":"Post Blog",
+  "mACP":"/Blog/mode/postblog"
+}
