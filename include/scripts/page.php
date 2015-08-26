@@ -9,16 +9,47 @@ class pageGeneration {
 		$this->parser = $parser;
 		$this->modules = $modules;
 		$this->vars = $cms_vars;
-		$core = new core($this->settings, $this->version, $this->dbc, $this->layout, $this->parser, $this->modules, $this->vars);
-		//set_error_handler(array($core, 'fatalErrHandlr'));
-		//set_exception_handler(array($core, 'fatalErrHandlr'));
+		$this->pageGen = $this;
+		self::GenerationModifiers($this->settings, $this->modules, $this->vars);
+		$core = new core($this->settings, $this->version, $this->dbc, $this->layout, $this->parser, $this->modules, $this->vars, $this->pageGen);
 		$this->core = $core;
-		$this->core->GenerationModifiers($this->settings, $this->modules, $this->vars);
 		register_shutdown_function(array($core, 'fatalErrHandlr'));
 		$admin = new admin($this->settings, $this->version, $this->dbc, $this->layout, $this->core, $this->parser, $this->vars);
 		$this->admin = $admin;
 
 	}
+	public function GenerationModifiers(&$settings, &$modules, &$cms_vars){      //<-- changed
+		    $query = "SELECT `modifiers` FROM `settings`";
+		    $data = mysqli_query($this->dbc, $query);
+		    $row = mysqli_fetch_array($data);
+		    $modifiers = $row['modifiers'];
+		    $modifiers = explode(";", $modifiers);
+		    foreach($modifiers as $modifier){
+		        $mod = explode(".", $modifier);
+		        $control = $mod[0];
+		        $setting = $mod[1];
+		        switch($control){
+		            case "moduleOff":
+		                $modules[$setting]['enabled'] = 0;
+		                break;
+								case "moduleOn":
+										$modules[$setting]['enabled'] = 1;
+										break;
+		            case "settingsChange":
+		                $s = explode(":", $setting);
+		                $toChange = $s[0];
+		                $changeTo = $s[1];
+		                $settings[$toChange] = $changeTo;      //<-- changed
+		                break;
+								case "varSet":
+										$s = explode(":", $setting);
+										//print_r($cms_vars);
+										$cms_vars[$s[0]] = $s[1];
+										//print_r($cms_vars);
+										break;
+		        }
+		    }
+		}
 	public function loadModule($operator, &$modules){
 		if(isset($operator)){
 			$option = $operator;
@@ -53,7 +84,7 @@ class pageGeneration {
 			}
 			if($option === 'acp'){
 				foreach($modules as $name => $module) if ($module['enabled'] && ($module['admin'] == '1')) {
-					if($this->verify("core.*") || $this->verify($module['perms']))
+					if($this->core->verify("core.*") || $this->core->verify($module['perms']))
 					echo '<li class="navList-item"><a class="btn btn-default width100" href="'.$module['acp'].'">'.$module['sidebarDesc'].'</a></li>';
 				}
 			}

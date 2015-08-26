@@ -745,7 +745,7 @@ echo '</table></div>
 
 
 class core {
-	public function __construct($settings, $version, $dbc, $layout, $parser, $modules, $cms_vars){
+	public function __construct($settings, $version, $dbc, $layout, $parser, $modules, $cms_vars, $pageFuncs){
 		$this->settings = $settings;
 		$this->version = $version;
 		$this->dbc = $dbc;
@@ -753,6 +753,7 @@ class core {
 		$this->parser = $parser;
 		$this->modules = $modules;
 		$this->vars = $cms_vars;
+		$this->pageGen = $pageFuncs;
 
 	}
 	/*
@@ -817,8 +818,8 @@ class core {
             }
         return $type;
     }
-		public function GenerationModifiers(&$settings, &$modules, &$cms_vars){      //<-- changed
-
+		/*
+	public function GenerationModifiers(&$settings, &$modules, &$cms_vars){      //<-- changed
 		    $query = "SELECT `modifiers` FROM `settings`";
 		    $data = mysqli_query($this->dbc, $query);
 		    $row = mysqli_fetch_array($data);
@@ -850,9 +851,11 @@ class core {
 		        }
 		    }
 		}
+		*/
 	public function notifBar(){
 		if(isset($_SESSION['uid'])){
 			echo '</div><div class="col-3"><div class="shadowbar">';
+			print_r($this->vars);
 			if(isset($_GET['action']) && ($_GET['action'] == 'markasread')){
 				$query = "UPDATE notifications SET `read` = '1' WHERE `user` = ".$_SESSION['uid']." ";
 				$data = mysqli_query($this->dbc, $query);
@@ -906,12 +909,12 @@ class core {
 				$row = mysqli_fetch_array($data);
 				$uid = $_SESSION['uid'];
 				echo sprintf($this->layout['sidebar-core'], $row['username'], $row['username']);
-					$this->loadModule("sidebar", $this->modules);
+					$this->pageGen->loadModule("sidebar", $this->modules);
 					if($this->verify("core.*")){
 						echo sprintf($this->layout['sidebarLink'], "/acp", "Admin Panel");
 						}
 					if($this->verify("core.*") || $this->verify("core.mod")){
-						$this->loadModule("acp", $this->modules);
+						$this->pageGen->loadModule("acp", $this->modules);
 					}
 					//echo '</div>';
 				}
