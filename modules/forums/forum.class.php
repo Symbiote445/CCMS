@@ -846,7 +846,7 @@ class Forums{
 			$data = mysqli_query($this->dbc, $query);
 			$row = mysqli_fetch_array($data);
 			$uPerm = $row['group'];
-			if($perm <= $uPerm && is_int($category)){
+			if($perm <= $uPerm){
 			// Update the post data in the database
 			if (!empty($post1) && !empty($title)) {
 				$query = "INSERT INTO posts (`user_id`, `date`, `title`, `post`, `category`) VALUES ('$username', NOW(), '$title', '$post1', '$category')";

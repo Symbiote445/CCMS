@@ -14,6 +14,16 @@ CREATE TABLE IF NOT EXISTS `posts` (
   PRIMARY KEY (`post_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
 
+CREATE TABLE IF NOT EXISTS `reply` (
+  `reply_id` int(11) NOT NULL AUTO_INCREMENT,
+  `post_id` text NOT NULL,
+  `user_id` varchar(32) NOT NULL,
+  `reply` text NOT NULL,
+  `hidden` int(11) NOT NULL DEFAULT '0',
+  `date` datetime NOT NULL,
+  PRIMARY KEY (`reply_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
+
 CREATE TABLE IF NOT EXISTS `categories` (
   `cat_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` text NOT NULL,

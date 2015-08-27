@@ -60,8 +60,7 @@ class news {
 
 	}
 	public function newsAdminBar(){
-		global $dbc, $parser, $layout, $main, $settings, $core;
-		echo sprintf($layout['adminBar'], '/news/mode/admin', 'News');
+		echo sprintf($this->layout['adminBar'], '/news/mode/admin', 'News');
 	}
 	public function newsInstall(){
 		if(!isset($this->vars['newsInstalled'])){
@@ -80,27 +79,26 @@ class news {
 		}
 	}
 	public function newsView($display){
-		//Global
-		global $dbc, $parser, $layout, $main, $settings, $core;
 		if($display == "homePage"){
 			$query = "SELECT news.*, users.* FROM news JOIN users ON users.uid = news.user AND `hidden` = 0 ORDER BY news.id DESC LIMIT 5";
-			$data = mysqli_query($dbc, $query);
+			$data = mysqli_query($this->dbc, $query);
 			$ct = mysqli_num_rows($data);
 			if($ct == 0){
 				echo '<div class="shadowbar">No news posts to display</div>';
 			}
 			while($row = mysqli_fetch_array($data)){
-				$parsed = $parser->parse($row['body']);
-				$sig = $parser->parse($row['sig']);
+				$parsed = $this->parser->parse($row['body']);
+				$sig = $this->parser->parse($row['sig']);
 				$permalink = "/news/post/".$row['id'];
-				echo sprintf($layout['blogViewFormat'], $permalink, $row['title'], $row['picture'], $row['uid'], $row['username'], date('M j Y g:i A', strtotime($row['date'])), $parsed, $sig);
+				echo '<div class="shadowbar"><a class="Link LButton" href="'.$permalink.'">Permalink</a></div>';
+				echo sprintf($this->layout['blogViewFormat'], $row['title'], $row['picture'], $row['uid'], $row['username'], date('M j Y g:i A', strtotime($row['date'])), $parsed, $sig);
 			}
 		} else {
 			if($display == "newsPage"){
 				echo '
 				<script type="text/javascript">
 					$(document).ready(function() {
-						document.title = "'.$settings['site_name'].' - News";
+						document.title = "'.$this->settings['site_name'].' - News";
 					});
 				</script>
 				';
@@ -108,19 +106,20 @@ class news {
 					$p = 0;
 				} else {
 					$secureP = preg_replace("/[^0-9]/", "", $_GET['p']);
-					$p = mysqli_real_escape_string($dbc, $secureP);
+					$p = mysqli_real_escape_string($this->dbc, $secureP);
 				}
 				$query = "SELECT news.*, users.* FROM news JOIN users ON users.uid = news.user AND `hidden` = 0 ORDER BY news.id DESC LIMIT $p,5";
-				$data = mysqli_query($dbc, $query);
+				$data = mysqli_query($this->dbc, $query);
 				$ct = mysqli_num_rows($data);
 				if($ct == 0){
 					echo '<div class="shadowbar">No news posts to display</div>';
 				}
 				while($row = mysqli_fetch_array($data)){
-					$parsed = $parser->parse($row['body']);
-					$sig = $parser->parse($row['sig']);
+					$parsed = $this->parser->parse($row['body']);
+					$sig = $this->parser->parse($row['sig']);
 					$permalink = "/news/post/".$row['id'];
-					echo sprintf($layout['blogViewFormat'], $permalink, $row['title'], $row['picture'], $row['uid'], $row['username'], date('M j Y g:i A', strtotime($row['date'])), $parsed, $sig);
+					echo '<div class="shadowbar"><a class="Link LButton" href="'.$permalink.'">Permalink</a></div>';
+					echo sprintf($this->layout['blogViewFormat'], $row['title'], $row['picture'], $row['uid'], $row['username'], date('M j Y g:i A', strtotime($row['date'])), $parsed, $sig);
 				}
 				if($ct > 0){
 					echo '<div class="shadowbar"><a class="Link LButton" href="/news/p/'.($p - 5).'">Previous</a><a class="Link LButton" href="/news/p/'.($p + 5).'">Next</a></div>';
@@ -128,22 +127,22 @@ class news {
 			} else {
 				if($display == "perma"){
 					$secureP = preg_replace("/[^0-9]/", "", $_GET['post']);
-					$p = mysqli_real_escape_string($dbc, $secureP);
+					$p = mysqli_real_escape_string($this->dbc, $secureP);
 					$query = "SELECT news.*, users.* FROM news JOIN users ON users.uid = news.user AND `hidden` = 0 WHERE id = '$p'";
-					$data = mysqli_query($dbc, $query);
+					$data = mysqli_query($this->dbc, $query);
 					$ct = mysqli_num_rows($data);
 					if($ct == 0){
 						echo '<div class="shadowbar">No news posts to display</div>';
 					}
 					$row = mysqli_fetch_array($data);
-					echo '<div class="shadowbar"><a class="Link LButton" href="/newsFB/p/'.$row['id'].'">FB Post Generator</a></div>';
-					$parsed = $parser->parse($row['body']);
-					$sig = $parser->parse($row['sig']);
+					$parsed = $this->parser->parse($row['body']);
+					$sig = $this->parser->parse($row['sig']);
 					$permalink = "/news/post/".$row['id'];
+					echo '<div class="shadowbar"><a class="Link LButton" href="/newsFB/p/'.$row['id'].'">FB Post Generator</a><a class="Link LButton" href="'.$permalink.'">Permalink</a></div>';
 					echo '
 					<script type="text/javascript">
 						$(document).ready(function() {
-							document.title = "'.$settings['site_name'].' - '.$row['title'].'";
+							document.title = "'.$this->settings['site_name'].' - '.$row['title'].'";
 						});
 					</script>
 					';
@@ -153,28 +152,27 @@ class news {
 					echo '<meta itemprop="fb" property="og:description" content="'.$parsed.'" />';
 					echo '<meta itemprop="fb" property="og:image" content="none" />';
 					*/
-					echo sprintf($layout['blogViewFormat'], $permalink, $row['title'], $row['picture'], $row['uid'], $row['username'], date('M j Y g:i A', strtotime($row['date'])), $parsed, $sig);
+					echo sprintf($this->layout['blogViewFormat'], $row['title'], $row['picture'], $row['uid'], $row['username'], date('M j Y g:i A', strtotime($row['date'])), $parsed, $sig);
 				}
 			}
 		}
 	}
 	public function postNews(){
-		global $settings, $version, $dbc, $layout, $core, $parser;
 		echo'<div class="shadowbar">';
-		if($core->verify("news.*") || $core->verify("news.write")){
+		if($this->core->verify("news.*") || $this->core->verify("news.write")){
 			$query = "SELECT * FROM users WHERE uid = '" . $_SESSION['uid'] . "'";
-			$data = mysqli_query($dbc, $query);
+			$data = mysqli_query($this->dbc, $query);
 			$row = mysqli_fetch_array($data);
 			$username = $row['uid'];
 			if (isset($_POST['submit'])) {
-				$post = mysqli_real_escape_string($dbc, trim($_POST['blogPost']));
-				$display = mysqli_real_escape_string($dbc, trim($_POST['display']));
-				$title = mysqli_real_escape_string($dbc, trim($_POST['title']));
+				$post = mysqli_real_escape_string($this->dbc, trim($_POST['blogPost']));
+				$display = mysqli_real_escape_string($this->dbc, trim($_POST['display']));
+				$title = mysqli_real_escape_string($this->dbc, trim($_POST['title']));
 
 				if (!empty($post) && !empty($title)) {
 
 					$query = "INSERT INTO news (`title`, `body`, `display`, `user`, `date`) VALUES ('$title', '$post', '$display', '$username', NOW() )";
-					mysqli_query($dbc, $query);
+					mysqli_query($this->dbc, $query);
 
 					echo '<div class="shadowbar">Your post has been successfully added. Would you like to <a href="/news">view all of the news posts</a>?</div>';
 
@@ -184,38 +182,36 @@ class news {
 					echo '<div class="shadowbar">You must enter information into all of the fields.</p>';
 				}
 			}
-			print($layout['newsPostFormat']);
+			print($this->layout['newsPostFormat']);
 			echo'</div>';
 		}
 	}
 	public function newsPostAdmin(){
-		global $settings, $version, $dbc, $layout, $core, $parser;
-		$core->isLoggedIn();
+		$this->core->isLoggedIn();
 		echo '<div class="shadowbar">';
 		if(!$core->verify("news.*")){
 			exit();
 		}
 
 		$query = "SELECT news.*, users.* FROM news JOIN users ON users.uid = news.user ORDER BY news.id DESC ";
-		$data = mysqli_query($dbc, $query);
+		$data = mysqli_query($this->dbc, $query);
 		while ($row = mysqli_fetch_array($data)) {
-			$parsed = $parser->parse($row['body']);
-			echo sprintf($layout['adminBlogPostLayout'], $parsed, $row['id'], 'news', 'delete', $row['id'], $row['hidden'], 'newa', $row['id'], 'news', $row['id'], $row['username'], $row['adminlevel']);
+			$parsed = $this->parser->parse($row['body']);
+			echo sprintf($this->layout['adminBlogPostLayout'], $parsed, $row['id'], 'news', 'delete', $row['id'], $row['hidden'], 'newa', $row['id'], 'news', $row['id'], $row['username'], $row['adminlevel']);
 		}
 		echo '</div>';
 	}
 	public function newsHideAdmin(){
-		global $settings, $version, $dbc, $layout, $core, $parser;
-		$core->isLoggedIn();
-		if(!$core->verify("news.*")){
+		$this->core->isLoggedIn();
+		if(!$this->core->verify("news.*")){
 			exit();
 		}
 		if (isset($_POST['submit'])) {
-			$postid = mysqli_real_escape_string($dbc, trim($_POST['postid']));
+			$postid = mysqli_real_escape_string($this->dbc, trim($_POST['postid']));
 			if (!empty($postid)) {
 
 				$query = "UPDATE news SET `hidden`='1' WHERE id = $postid";
-				mysqli_query($dbc, $query);
+				mysqli_query($this->dbc, $query);
 				echo '<div class="shadowbar"><p>Post has been successfully hidden. Would you like to <a href="/news/mode/admin">go back to the admin panel</a>?</p></div>';
 
 				exit();
@@ -226,20 +222,19 @@ class news {
 		}
 
 
-		echo sprintf($layout['adminNewsDeleteLayout'], 'hide', $_GET['del']);
+		echo sprintf($this->layout['adminNewsDeleteLayout'], 'hide', $_GET['del']);
 	}
 	public function newsUnHideAdmin(){
-		global $settings, $version, $dbc, $layout, $core, $parser;
-		$core->isLoggedIn();
-		if(!$core->verify("news.*")){
+		$this->core->isLoggedIn();
+		if(!$this->core->verify("news.*")){
 			exit();
 		}
 		if (isset($_POST['submit'])) {
-			$postid = mysqli_real_escape_string($dbc, trim($_POST['postid']));
+			$postid = mysqli_real_escape_string($this->dbc, trim($_POST['postid']));
 			if (!empty($postid)) {
 
 				$query = "UPDATE news SET `hidden`='0' WHERE id = $postid";
-				mysqli_query($dbc, $query);
+				mysqli_query($this->dbc, $query);
 				echo '<div class="shadowbar"><p>Post has been successfully unhidden. Would you like to <a href="/news/mode/admin">go back to the admin panel</a>?</p></div>';
 
 				exit();
@@ -250,20 +245,19 @@ class news {
 		}
 
 
-		echo sprintf($layout['adminNewsDeleteLayout'], 'unhide', $_GET['del']);
+		echo sprintf($this->layout['adminNewsDeleteLayout'], 'unhide', $_GET['del']);
 	}
 	public function newsDeletePost(){
-		global $settings, $version, $dbc, $layout, $core, $parser;
-		$core->isLoggedIn();
-		if(!$core->verify("news.*")){
+		$this->core->isLoggedIn();
+		if(!$this->core->verify("news.*")){
 			exit();
 		}
 		if (isset($_POST['submit'])) {
-			$postid = mysqli_real_escape_string($dbc, trim($_POST['postid']));
+			$postid = mysqli_real_escape_string($this->dbc, trim($_POST['postid']));
 			if (!empty($postid)) {
 
 				$query = "DELETE FROM news WHERE id = $postid";
-				mysqli_query($dbc, $query);
+				mysqli_query($this->dbc, $query);
 				echo '<div class="shadowbar"><p>Post has been successfully deleted. Would you like to <a href="/news/mode/admin">go back to the admin panel</a>?</p></div>';
 
 				exit();
@@ -273,27 +267,26 @@ class news {
 			}
 		}
 
-		$id = mysqli_real_escape_string($dbc, trim($_GET['del']));
-		echo sprintf($layout['adminNewsDeleteLayout'], 'delete', $id);
+		$id = mysqli_real_escape_string($this->dbc, trim($_GET['del']));
+		echo sprintf($this->layout['adminNewsDeleteLayout'], 'delete', $id);
 	}
 	public function ogstat(){
-		global $settings, $version, $dbc, $layout, $core, $parser;
-		$postid = mysqli_real_escape_string($dbc, $_GET['p']);
+		$postid = mysqli_real_escape_string($this->dbc, $_GET['p']);
 		if(!file_exists("ogPost/")){
 			mkdir("ogPost/");
 		}
 		$query = "SELECT * FROM news WHERE id = '$postid'";
-		$data = mysqli_query($dbc, $query);
+		$data = mysqli_query($this->dbc, $query);
 		$row = mysqli_fetch_array($data);
 		$t = $row['title'];
-		$p = $parser->parse($row['body']);
-		$l = 'http://'.$settings['b_url'].'/news/post/'.$row['id'];
-		$s = $settings['site_name'];
+		$p = $this->parser->parse($row['body']);
+		$l = 'http://'.$this->settings['b_url'].'/news/post/'.$row['id'];
+		$s = $this->settings['site_name'];
 		$file = "ogPost/news".$postid.'.html';
-		$infLink = 'http://'.$settings['b_url'].'/ogPost/news'.$postid.'.html';
+		$infLink = 'http://'.$this->settings['b_url'].'/ogPost/news'.$postid.'.html';
 		$p = strip_tags($p);
 		if(file_exists($file)){
-			echo '<div class="shadowbar">Facebook Link: http://'.$settings['b_url'].'/ogPost/news'.$postid.'.html</div>';
+			echo '<div class="shadowbar">Facebook Link: http://'.$this->settings['b_url'].'/ogPost/news'.$postid.'.html</div>';
 		} else {
 			$OGFile =
 (
@@ -314,7 +307,7 @@ EOD
 );
 			$path = 'ogPost/news'.$postid.'.html';
 			file_put_contents($path, $OGFile);
-			echo '<div class="shadowbar">Facebook Link: http://'.$settings['b_url'].'/ogPost/news'.$postid.'.html</div>';
+			echo '<div class="shadowbar">Facebook Link: http://'.$this->settings['b_url'].'/ogPost/news'.$postid.'.html</div>';
 		}
 	}
 }
