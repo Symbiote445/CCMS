@@ -8,9 +8,8 @@ if(!defined("CCore")){
 	die("Access Denied.");
 }
 class admin {
-	public function __construct($settings, $version, $dbc, $layout, $core, $parser, $cms_vars){
+	public function __construct($settings, $dbc, $layout, $core, $parser, $cms_vars){
 		$this->settings = $settings;
-		$this->version = $version;
 		$this->dbc = $dbc;
 		$this->layout = $layout;
 		$this->core = $core;
@@ -745,9 +744,8 @@ echo '</table></div>
 
 
 class core {
-	public function __construct($settings, $version, $dbc, $layout, $parser, $modules, $cms_vars, $pageFuncs){
+	public function __construct($settings, $dbc, $layout, $parser, $modules, $cms_vars, $pageFuncs){
 		$this->settings = $settings;
-		$this->version = $version;
 		$this->dbc = $dbc;
 		$this->layout = $layout;
 		$this->parser = $parser;
@@ -756,19 +754,6 @@ class core {
 		$this->pageGen = $pageFuncs;
 
 	}
-	/*
-	public function errHandlr(){
-		$errstrArr = error_get_last();
-		$errno = $errstrArr['type'];
-		$errstr = $errstrArr['message'];
-		$errfile = $errstrArr['file'];
-		$errline = $errstrArr['line'];
-		$query = "INSERT INTO `err` (`errno`, `errstr`, `errfile`, `errline`) VALUES ('$errno', '$errstr', '$errfile', '$errline')";
-		mysqli_query($this->dbc, $query);
-		//die("<b>There was an error. Check the database.</b>");
-		print_r($errstrArr);
-	}
-	*/
 	public function fatalErrHandlr(){
 		$errstrArr = error_get_last();
 		if($errstrArr['type'] > 0){
@@ -818,44 +803,9 @@ class core {
             }
         return $type;
     }
-		/*
-	public function GenerationModifiers(&$settings, &$modules, &$cms_vars){      //<-- changed
-		    $query = "SELECT `modifiers` FROM `settings`";
-		    $data = mysqli_query($this->dbc, $query);
-		    $row = mysqli_fetch_array($data);
-		    $modifiers = $row['modifiers'];
-		    $modifiers = explode(";", $modifiers);
-		    foreach($modifiers as $modifier){
-		        $mod = explode(".", $modifier);
-		        $control = $mod[0];
-		        $setting = $mod[1];
-		        switch($control){
-		            case "moduleOff":
-		                $modules[$setting]['enabled'] = 0;
-		                break;
-								case "moduleOn":
-										$modules[$setting]['enabled'] = 1;
-										break;
-		            case "settingsChange":
-		                $s = explode(":", $setting);
-		                $toChange = $s[0];
-		                $changeTo = $s[1];
-		                $settings[$toChange] = $changeTo;      //<-- changed
-		                break;
-								case "varSet":
-										$s = explode(":", $setting);
-										//print_r($cms_vars);
-										$cms_vars[$s[0]] = $s[1];
-										//print_r($cms_vars);
-										break;
-		        }
-		    }
-		}
-		*/
 	public function notifBar(){
 		if(isset($_SESSION['uid'])){
 			echo '</div><div class="col-3"><div class="shadowbar">';
-			print_r($this->vars);
 			if(isset($_GET['action']) && ($_GET['action'] == 'markasread')){
 				$query = "UPDATE notifications SET `read` = '1' WHERE `user` = ".$_SESSION['uid']." ";
 				$data = mysqli_query($this->dbc, $query);
@@ -1593,5 +1543,265 @@ class core {
 
 
 }
+
+class install {
+	public function __construct($step){
+		$this->stage = $step;
+		$this->version = "CCMS6aCC1-5b";
+		list($usec, $sec) = explode(' ', microtime());
+	  $seed = (float) $sec + ((float) $usec * 100000);
+		mt_srand($seed);
+		$this->calculatedLicense = mt_rand();
+	}
+	public function installer($dbc){
+		if(!isset($this->vars['cmsInstalled'])){
+			$sqlfile = 'include/scripts/coresql/core.sql';
+			$sql = file_get_contents($sqlfile);
+			mysqli_multi_query($dbc, $sql);
+		}
+	}
+	public function upgrade(){
+		if(!file_exists("upgrade.czip")){
+	    echo '<div class="shadowbar">You lack the upgrade file; please download the upgrade file and try again</div>';
+	  } else {
+	    $zip = new ZipArchive;
+	    $path = pathinfo(realpath("upgrade.czip"), PATHINFO_DIRNAME);
+	    $f = $zip->open("upgrade.czip");
+	    if($f === true){
+	      $zip->extractTo($path);
+	      $zip->close();
+	      echo '<div class="shadowbar">Upgrade complete.</div>';
+	    }
+	  }
+	}
+	public function setVars(){
+		if($this->stage == 2){
+			include('include/scripts/settings.php');
+			$license = $this->calculatedLicense;
+			$ver = $this->version;
+			$licenseVar = 'varSet.license:installerLicense-'.$license;
+			$modifiers = $licenseVar.';varSet.ver:'.$ver.';varSet.cmsInstalled:true';
+			$dbc = mysqli_connect($settings['db_host'],$settings['db_user'],$settings['db_password'],$settings['db']);
+			$query = "INSERT INTO `settings` (`modifiers`) VALUES ('$modifiers')";
+			mysqli_query($dbc, $query);
+			echo '<div class="shadowbar">CMS Installed <a href="index.php">Home Page</a></div>';
+		}
+
+	}
+	public function array2php($arr){
+		$out = '<?php $settings = array(';
+		foreach( $arr as $k => $v ){
+			if( is_bool($v) ){
+				$v = ( $v ) ? 'true' : 'false';
+			}
+			else{
+				$v = '\''.$v.'\'';
+			}
+			$out .= ' \''.$k.'\' => '.$v.',';
+		}
+		$out = rtrim($out, ",");
+		$out .= ' ); ?>';
+
+		return $out;
+	}
+
+
+	private function createFile($name, $burl, $bemail, $about, $signup, $db, $dbu, $dbp, $dbh){
+		$mySettingsFile = 'include/scripts/settings.php';
+
+		$newSettings = array (         // the default settings array
+		'home_display'=>'about',
+		'style'=>'core',
+		'dev'=>'0',
+		'db_host'=>''.$dbh.'',
+		'db_user'=>''.$dbu.'',
+		'db_password'=>''.$dbp.'',
+		'db'=>''.$db.'',
+		'login_enabled'=>true,
+		'signup_enabled'=>''.$signup.'',
+		'site_name'=>''.$name.'',
+		'b_url'=>''.$burl.'',
+		'b_email'=>''.$bemail.'',
+		'board_enabled'=>true,
+		'about' => ''.$about.'',
+		'sidebarDisp'=>true
+		);
+		$end = '<?php $dbc=mysqli_connect($settings[\'db_host\'],$settings[\'db_user\'],$settings[\'db_password\'],$settings[\'db\']); ?>';
+		$array = $this->array2php($newSettings);
+		file_put_contents($mySettingsFile, $array);
+		file_put_contents($mySettingsFile, $end, FILE_APPEND | LOCK_EX );
+	}
+
+
+	public function information(){
+		//Admin user information
+		if (isset($_POST['submit'])) {
+			$name = $_POST['name'];
+			$url = $_POST['url'];
+			$email = $_POST['email'];
+			$about = $_POST['about'];
+			$signup = $_POST['signup'];
+			$db = $_POST['db'];
+			$dbu = $_POST['dbuser'];
+			$dbp = $_POST['dbpass'];
+			$dbh = $_POST['dbhost'];
+			if (!empty($db) && !empty($dbu) && !empty($dbp) && !empty($dbh)) {
+				$this->createFile($name, $url, $email, $about, $signup, $db, $dbu, $dbp, $dbh);
+				$dbc = mysqli_connect($dbh,$dbu,$dbp,$db) or die(mysqli_error($dbc));
+				$username = mysqli_real_escape_string($dbc, trim($_POST['username']));
+				$password1 = mysqli_real_escape_string($dbc, trim($_POST['password1']));
+				$password2 = mysqli_real_escape_string($dbc, trim($_POST['password2']));
+				$perms = mysqli_real_escape_string($dbc, trim($_POST['perm']));
+				$usergroup = mysqli_real_escape_string($dbc, trim($_POST['usergroup']));
+				$email = mysqli_real_escape_string($dbc, trim($_POST['email']));
+				$hash = md5(rand(0,1000));
+				$uip = $_SERVER['REMOTE_ADDR'];
+				if (!empty($username) && !empty($password1) && !empty($password2) && !empty($email) && ($password1 == $password2)) {
+					$query = "INSERT INTO users (`username`, `password`, `email`, `group`, `activated`) VALUES ('$username', SHA('$password1'), '$email', '4', '1')";
+					$this->installer($dbc);
+					mysqli_close($dbc);
+					$dbc = mysqli_connect($dbh,$dbu,$dbp,$db) or die(mysqli_error($dbc));
+					echo '<div class="shadowbar"><a href="/installer/step/2">Next Step</a></div>';
+					$data = mysqli_multi_query($dbc, $query) or die (mysqli_error($dbc));
+				} else {
+					echo '<div class="shadowbar">You must enter all of the sign-up data, including the desired password twice.</div>';
+				}
+				exit();
+			}
+		}
+
+		echo'
+		<div class="shadowbar">
+		<form method="post" action="/installer/step/1">
+		<fieldset>
+		<legend>Settings</legend>
+		<div class="input-group">
+		<span class="input-group-addon">DB Host</span>
+		<input class="form-control" type="text" name="dbhost"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">DB User</span>
+		<input class="form-control" type="text" name="dbuser"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">DB Password</span>
+		<input class="form-control" type="password" name="dbpass"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Database</span>
+		<input class="form-control" type="text"  name="db"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Site Name</span>
+		<input class="form-control" type="text" name="name"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Site URL</span>
+		<input class="form-control" type="text" name="url"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Site Email</span>
+		<input class="form-control" type="text" name="email"  />
+		</div>
+		<div class="input-group">
+		<textarea rows="8" placeholder="About your site..." name="about" id="about" cols="100"></textarea><br />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Signup Settings</span>
+		<select name="signup" >
+		<option value="true">Enabled</option>
+		<option value="false">Disabled</option>
+		</select>
+		</div>
+		<legend>Admin User</legend>
+		<div class="input-group">
+		<span class="input-group-addon">Username</span>
+		<input class="form-control" type="text" id="username" name="username"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Email</span>
+		<input class="form-control" type="text" id="email" name="email" />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Password</span>
+		<input class="form-control" type="password" id="password" name="password1" />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Retype Password</span>
+		<input class="form-control" type="password" id="password" name="password2" />
+		</div>
+		<input type="hidden" id="perm" name="perm" value="O"/>
+		<input type="hidden" id="usergroup" name="usergroup" value="Site Admin"/>
+		<input class="Link LButton" type="submit" value="Submit" name="submit" />
+	</form>
+	</div>';
+	}
+	public function configRepair(){
+		echo '<div class="shadowbar">';
+		if (isset($_POST['submit'])) {
+			$name = $_POST['name'];
+			$url = $_POST['url'];
+			$email = $_POST['email'];
+			$about = $_POST['about'];
+			$signup = $_POST['signup'];
+			$db = $_POST['db'];
+			$dbu = $_POST['dbuser'];
+			$dbp = $_POST['dbpass'];
+			$dbh = $_POST['dbhost'];
+			if (!empty($db) && !empty($dbu) && !empty($dbp) && !empty($dbh)) {
+				$this->createFile($name, $url, $email, $about, $signup, $db, $dbu, $dbp, $dbh);
+				echo 'Config Repaired. <a href="index.php">Board Index</a>';
+				exit();
+			}
+		}
+		echo'
+		<form method="post" action="install.php?mode=configRepair">
+		<fieldset>
+		<legend>Settings</legend>
+		<div class="input-group">
+		<span class="input-group-addon">DB Host</span>
+		<input class="form-control" type="text" name="dbhost"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">DB User</span>
+		<input class="form-control" type="text" name="dbuser"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">DB Password</span>
+		<input class="form-control" type="password" name="dbpass"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Database</span>
+		<input class="form-control" type="text"  name="db"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Site Name</span>
+		<input class="form-control" type="text" name="name"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Site URL</span>
+		<input class="form-control" type="text" name="url"  />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Site Email</span>
+		<input class="form-control" type="text" name="email"  />
+		</div>
+		<div class="input-group">
+		<textarea rows="8" placeholder="About your site..." name="about" id="about" cols="100"></textarea><br />
+		</div>
+		<div class="input-group">
+		<span class="input-group-addon">Signup Settings</span>
+		<select name="signup" >
+		<option value="true">Enabled</option>
+		<option value="false">Disabled</option>
+		</select>
+		</div>
+		<input class="Link LButton" type="submit" value="Submit" name="submit" />
+		</form>
+		</div>
+		';
+	}
+}
+
 
 ?>

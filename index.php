@@ -5,7 +5,6 @@
 	//Load files...
 	require_once('include/scripts/settings.php');
 	require_once("modules.php");
-	require_once('include/scripts/version.php');
 	require('include/scripts/core.class.php');
 	require('include/scripts/nbbc_main.php');
 	$parser = new BBCode;
@@ -21,6 +20,6 @@
 	$admin = new admin($settings, $version, $dbc, $layout, $core, $parser);
 	*/
 	$cms_vars = array();
-	$page = new pageGeneration($settings, $version, $dbc, $layout, $parser, $modules, $cms_vars);
+	$page = new pageGeneration($settings, $dbc, $layout, $parser, $modules, $cms_vars);
 	$page->Generate();
 ?>

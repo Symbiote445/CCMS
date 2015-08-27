@@ -1,9 +1,8 @@
 <?php
 //Page Generation
 class pageGeneration {
-	public function __construct($settings, $version, $dbc, $layout, $parser, $modules, $cms_vars){
+	public function __construct($settings, $dbc, $layout, $parser, $modules, $cms_vars){
 		$this->settings = $settings;
-		$this->version = $version;
 		$this->dbc = $dbc;
 		$this->layout = $layout;
 		$this->parser = $parser;
@@ -11,11 +10,12 @@ class pageGeneration {
 		$this->vars = $cms_vars;
 		$this->pageGen = $this;
 		self::GenerationModifiers($this->settings, $this->modules, $this->vars);
-		$core = new core($this->settings, $this->version, $this->dbc, $this->layout, $this->parser, $this->modules, $this->vars, $this->pageGen);
+		$core = new core($this->settings, $this->dbc, $this->layout, $this->parser, $this->modules, $this->vars, $this->pageGen);
 		$this->core = $core;
 		register_shutdown_function(array($core, 'fatalErrHandlr'));
-		$admin = new admin($this->settings, $this->version, $this->dbc, $this->layout, $this->core, $this->parser, $this->vars);
+		$admin = new admin($this->settings, $this->dbc, $this->layout, $this->core, $this->parser, $this->vars);
 		$this->admin = $admin;
+		$this->version = $this->vars['ver'];
 
 	}
 	public function GenerationModifiers(&$settings, &$modules, &$cms_vars){      //<-- changed
@@ -124,7 +124,6 @@ class pageGeneration {
 		//$this->core->sidebar();
 		$this->core->securityAgent("check");
 			if(!isset($_GET['action'])){
-				echo $this->settings['home_display'];
 				if($this->settings['home_display'] == 'none' || $this->settings['home_display'] == 'about'){
 					echo '<div class="shadowbar">';
 					$parsed = $this->parser->parse($this->settings['about']);
@@ -174,7 +173,7 @@ class pageGeneration {
 		$this->core->onlineList();
 		$this->loadModule("initialLoad", $this->modules);
 		$this->core->notifBar();
-		echo sprintf($this->layout['footer'], $this->settings['b_url'], $this->settings['site_name'], $this->version['core']);
+		echo sprintf($this->layout['footer'], $this->settings['b_url'], $this->settings['site_name'], $this->version);
 	}
 }
 ?>
