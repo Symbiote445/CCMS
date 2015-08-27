@@ -3,13 +3,17 @@
 //Author: Gage LeBlanc
 //Dist: Cheesecake CMS
 
-$newsFunc = new news;
+$newsFunc = new news($this->settings, $this->dbc, $this->layout, $this->core, $this->parser, $this->vars);
 
 if(isset($_GET['action'])){
 	if(!isset($_GET['mode'])){
 		if($_GET['action'] == 'news' && !isset($_GET['post'])){
-			$newsFunc->newsView("newsPage");
-			$newsFunc->newsAdminBar();
+			if(!isset($this->vars['newsInstalled'])){
+				$newsFunc->newsInstall();
+			} else {
+				$newsFunc->newsView("newsPage");
+				$newsFunc->newsAdminBar();
+			}
 		}
 		if($_GET['action'] == 'postNews'){
 			$newsFunc->postNews();
@@ -46,9 +50,34 @@ if(isset($_GET['action'])){
 
 
 class news {
+	public function __construct($settings, $dbc, $layout, $core, $parser, $cms_vars){
+		$this->settings = $settings;
+		$this->dbc = $dbc;
+		$this->layout = $layout;
+		$this->core = $core;
+		$this->parser = $parser;
+		$this->vars = $cms_vars;
+
+	}
 	public function newsAdminBar(){
 		global $dbc, $parser, $layout, $main, $settings, $core;
 		echo sprintf($layout['adminBar'], '/news/mode/admin', 'News');
+	}
+	public function newsInstall(){
+		if(!isset($this->vars['newsInstalled'])){
+			//print_r($this->vars);
+			$sqlfile = 'include/scripts/news/sql/initialize.sql';
+			$sql = file_get_contents($sqlfile);
+			mysqli_multi_query($this->dbc, $sql);
+			$query = "SELECT `modifiers` FROM `settings`";
+			$data = mysqli_query($this->dbc, $query);
+			$row = mysqli_fetch_array($data);
+			$mods = $row['modifiers'];
+			$mods = $mods.';varSet.newsInstalled:true';
+			$query = "UPDATE `settings` SET `modifiers` = '$mods'";
+			mysqli_query($this->dbc, $query);
+			echo '<div class="shadowbar">News installed, <a href="/news">Refresh</a></div>';
+		}
 	}
 	public function newsView($display){
 		//Global
@@ -73,7 +102,7 @@ class news {
 					$(document).ready(function() {
 						document.title = "'.$settings['site_name'].' - News";
 					});
-				</script>			
+				</script>
 				';
 				if(!isset($_GET['p'])){
 					$p = 0;
@@ -97,7 +126,7 @@ class news {
 					echo '<div class="shadowbar"><a class="Link LButton" href="/news/p/'.($p - 5).'">Previous</a><a class="Link LButton" href="/news/p/'.($p + 5).'">Next</a></div>';
 				}
 			} else {
-				if($display == "perma"){					
+				if($display == "perma"){
 					$secureP = preg_replace("/[^0-9]/", "", $_GET['post']);
 					$p = mysqli_real_escape_string($dbc, $secureP);
 					$query = "SELECT news.*, users.* FROM news JOIN users ON users.uid = news.user AND `hidden` = 0 WHERE id = '$p'";
@@ -116,15 +145,15 @@ class news {
 						$(document).ready(function() {
 							document.title = "'.$settings['site_name'].' - '.$row['title'].'";
 						});
-					</script>			
+					</script>
 					';
 					/*
 					echo '<meta itemprop="fb" property="og:title" content="'.$row['title'].'" />';
 					echo '<meta itemprop="fb" property="og:url" content="http://'.$settings['b_url'].$permalink.'" />';
-					echo '<meta itemprop="fb" property="og:description" content="'.$parsed.'" />';		
+					echo '<meta itemprop="fb" property="og:description" content="'.$parsed.'" />';
 					echo '<meta itemprop="fb" property="og:image" content="none" />';
 					*/
-					echo sprintf($layout['blogViewFormat'], $permalink, $row['title'], $row['picture'], $row['uid'], $row['username'], date('M j Y g:i A', strtotime($row['date'])), $parsed, $sig);					
+					echo sprintf($layout['blogViewFormat'], $permalink, $row['title'], $row['picture'], $row['uid'], $row['username'], date('M j Y g:i A', strtotime($row['date'])), $parsed, $sig);
 				}
 			}
 		}
@@ -148,7 +177,7 @@ class news {
 					mysqli_query($dbc, $query);
 
 					echo '<div class="shadowbar">Your post has been successfully added. Would you like to <a href="/news">view all of the news posts</a>?</div>';
-					
+
 					exit();
 				}
 				else {
@@ -162,7 +191,7 @@ class news {
 	public function newsPostAdmin(){
 		global $settings, $version, $dbc, $layout, $core, $parser;
 		$core->isLoggedIn();
-		echo '<div class="shadowbar">';		
+		echo '<div class="shadowbar">';
 		if(!$core->verify("news.*")){
 			exit();
 		}
@@ -188,15 +217,15 @@ class news {
 				$query = "UPDATE news SET `hidden`='1' WHERE id = $postid";
 				mysqli_query($dbc, $query);
 				echo '<div class="shadowbar"><p>Post has been successfully hidden. Would you like to <a href="/news/mode/admin">go back to the admin panel</a>?</p></div>';
-				
+
 				exit();
 			}
 			else {
 				echo '<p class="error">You must enter information into all of the fields.</p>';
 			}
-		} 
-		
-		
+		}
+
+
 		echo sprintf($layout['adminNewsDeleteLayout'], 'hide', $_GET['del']);
 	}
 	public function newsUnHideAdmin(){
@@ -212,15 +241,15 @@ class news {
 				$query = "UPDATE news SET `hidden`='0' WHERE id = $postid";
 				mysqli_query($dbc, $query);
 				echo '<div class="shadowbar"><p>Post has been successfully unhidden. Would you like to <a href="/news/mode/admin">go back to the admin panel</a>?</p></div>';
-				
+
 				exit();
 			}
 			else {
 				echo '<p class="error">You must enter information into all of the fields.</p>';
 			}
-		} 
-		
-		
+		}
+
+
 		echo sprintf($layout['adminNewsDeleteLayout'], 'unhide', $_GET['del']);
 	}
 	public function newsDeletePost(){
@@ -236,14 +265,14 @@ class news {
 				$query = "DELETE FROM news WHERE id = $postid";
 				mysqli_query($dbc, $query);
 				echo '<div class="shadowbar"><p>Post has been successfully deleted. Would you like to <a href="/news/mode/admin">go back to the admin panel</a>?</p></div>';
-				
+
 				exit();
 			}
 			else {
 				echo '<p class="error">You must enter information into all of the fields.</p>';
 			}
-		} 
-		
+		}
+
 		$id = mysqli_real_escape_string($dbc, trim($_GET['del']));
 		echo sprintf($layout['adminNewsDeleteLayout'], 'delete', $id);
 	}
@@ -266,7 +295,7 @@ class news {
 		if(file_exists($file)){
 			echo '<div class="shadowbar">Facebook Link: http://'.$settings['b_url'].'/ogPost/news'.$postid.'.html</div>';
 		} else {
-			$OGFile = 
+			$OGFile =
 (
 <<<EOD
 <html>
@@ -278,7 +307,7 @@ class news {
 <meta property="og:description" content="$p"/>
 <script>
 window.location = "$l";
-</script>	
+</script>
 </head>
 </html>
 EOD

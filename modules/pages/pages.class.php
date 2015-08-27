@@ -5,7 +5,11 @@ if(isset($_GET['action']) && ($_GET['action'] == "pages")){
 	$pages->page();
 
 	if($_GET['action'] === 'pages' && !isset($_GET['page'])) {
-		$pages->pagelist();
+		if(!isset($this->vars['pagesInstalled'])){
+			$pages->pagesInstall();
+		} else {
+			$pages->pagelist();
+		}
 	}
 	$pages->pagesAdminBar();
 
@@ -29,6 +33,22 @@ class pages{
 		global $dbc, $parser, $layout, $main, $settings, $core;
 		echo sprintf($layout['adminBar'], '/pages/mode/pageadmin', 'Page');
 	}
+	public function pagesInstall(){
+		if(!isset($this->vars['pagesInstalled'])){
+			//print_r($this->vars);
+			$sqlfile = 'include/scripts/pages/sql/initialize.sql';
+			$sql = file_get_contents($sqlfile);
+			mysqli_multi_query($this->dbc, $sql);
+			$query = "SELECT `modifiers` FROM `settings`";
+			$data = mysqli_query($this->dbc, $query);
+			$row = mysqli_fetch_array($data);
+			$mods = $row['modifiers'];
+			$mods = $mods.';varSet.pagesInstalled:true';
+			$query = "UPDATE `settings` SET `modifiers` = '$mods'";
+			mysqli_query($this->dbc, $query);
+			echo '<div class="shadowbar">Pages installed, <a href="/pages">Refresh</a></div>';
+		}
+	}
 	static function stats(){
 		global $dbc;
 		$query = "SELECT * FROM pages";
@@ -40,7 +60,7 @@ class pages{
 		$filename = $day . $month . $year . '.dat';
 		$str = "Pages: \r\n Pages: $pcount \r\n";
 		file_put_contents("include/".$filename, $str, FILE_APPEND);
-		echo '<div class="shadowbar">Pages stats finished...</div>';		
+		echo '<div class="shadowbar">Pages stats finished...</div>';
 	}
 	public function addpage(){
 		global $dbc, $parser, $layout, $main, $settings, $core;
@@ -71,7 +91,7 @@ class pages{
 			//Clean up multiple dashes or whitespaces
 			$pagelink = preg_replace("/[\s-]+/", " ", $pagelink);
 			//Convert whitespaces and underscore to dash
-			$pagelink = preg_replace("/[\s_]/", "-", $pagelink);	
+			$pagelink = preg_replace("/[\s_]/", "-", $pagelink);
 			$query = "UPDATE `pages` SET `pagelink` = '$pagelink' WHERE `page_id` = '$pid'";
 			mysqli_query($dbc, $query);
 
@@ -98,7 +118,7 @@ class pages{
 			echo'<h3>' . $row['pagename'] . '</h3>';
 			$parsed = $parser->parse($row['body']);
 			echo $parsed;
-			echo '</div>'; 
+			echo '</div>';
 			$query = "SELECT users.*, comments.* FROM `comments` JOIN `users` ON `user` = `uid` AND `module` = 'pages' AND `id` = '$ID'";
 			$data = mysqli_query($dbc, $query);
 			while($row = mysqli_fetch_array($data)){
@@ -157,7 +177,7 @@ class pages{
 					}
 			   }
     });
-    }); 
+    });
 </script>
 EOD
 			);
@@ -167,13 +187,13 @@ EOD
 	public function pageadmin(){
 		global $dbc, $parser, $layout, $main, $settings, $core;
 		if($core->verify("pages.*")){
-		global $dbc, $parser, $layout, $main, $settings, $core; 	
+		global $dbc, $parser, $layout, $main, $settings, $core;
 		if(isset($_GET['pagename'])){
 			$pagename = mysqli_real_escape_string($dbc, $_GET['pagename']);
 			$query = "DELETE FROM pages WHERE pagelink = '$pagename'";
 			mysqli_query($dbc, $query);
 			echo 'Page Deleted. <a href="/pages">Back to pages</a><br>';
-		}	
+		}
 		$query = "SELECT * FROM pages";
 		$data = mysqli_query($dbc, $query);
 		echo'<div class="shadowbar"><legend>Page Admin</legend><table class="table"><thead><th>Page Name</th><th>Options</th></thead>';
@@ -181,7 +201,7 @@ EOD
 			echo '<tr><td>'.$row['pagename'].'</td><td><a class="Link LButton" href="/pages/mode/pageadmin/pagename/'.$row['pagelink'].'"> Delete Page</a><a class="Link LButton" href="/pages/mode/edit/page/'.$row['page_id'].'"> Edit Page</a></td></tr>';
 		}
 		echo '</table></div>';
-		
+
 		}
 	}
 	public function pagelist(){
@@ -207,7 +227,7 @@ EOD
 			}
 		}
 		echo '</table><a class="Link LButton" href="/pages/f/'.($f - 5).'">Previous</a><a class="Link LButton" href="/pages/f/'.($f + 5).'">Next</a>';
-		echo '</div>'; 
+		echo '</div>';
 	}
 	public function editPage(){
 		global $dbc, $parser, $layout, $main, $settings, $core;
@@ -225,7 +245,7 @@ EOD
 			$securePage = preg_replace("/[^0-9]/", "", $_GET['page']);
 			$page = mysqli_real_escape_string($dbc, $securePage);
 			$query = "SELECT body, page_id FROM pages WHERE page_id = '$page'";
-			$data = mysqli_query($dbc, $query);		
+			$data = mysqli_query($dbc, $query);
 			$row = mysqli_fetch_array($data);
 			echo sprintf($layout['adminPageEditLayout'], $row['body'], $row['page_id']);
 		} else {

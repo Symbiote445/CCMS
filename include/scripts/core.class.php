@@ -358,12 +358,16 @@ class admin {
 		}
 		echo '</tbody></table></div>';
 	}
+	public function getUpdate(){
+		file_put_contents("upgrade.czip", fopen("http://currentdev.cheesecakecms.org/update.czip", 'r'));
+		echo '<div class="shadowbar">Update Downloaded, <a href="/installer/upgrade">Install?</a></div>';
+	}
 	public function acp(){
 		if(!$this->core->verify("core.*") || $this->core->verify("core.mod")){
 			die("Insufficient Permissions");
 		}
 		echo '<div class="shadowbar">
-		<a class="Link LButton" href="/acp">Admin </a><a class="Link LButton" href="/acp/mode/errors">Errors </a><a class="Link LButton" href="/acp/mode/users">Users </a><a class="Link LButton" href="/acp/mode/groups">Groups </a><a class="Link LButton" href="/acp/mode/banlist">Banned Users</a><a class="Link LButton" href="/acp/mode/Settings">Settings </a><a class="Link LButton" href="/acp/mode/stats">Record Stats</a><a class="Link LButton" href="/acp/mode/counter">View Counter</a>';
+		<a class="Link LButton" href="/acp">Admin </a><a class="Link LButton" href="/acp/mode/errors">Errors </a><a class="Link LButton" href="/acp/mode/users">Users </a><a class="Link LButton" href="/acp/mode/groups">Groups </a><a class="Link LButton" href="/acp/mode/banlist">Banned Users</a><a class="Link LButton" href="/acp/mode/Settings">Settings </a><a class="Link LButton" href="/acp/mode/stats">Record Stats</a><a class="Link LButton" href="/acp/mode/counter">View Counter</a><a class="Link LButton" href="/acp/mode/update">Download Update</a>';
 		if($this->settings['dev'] == '1'){
 			echo '<a class="Link LButton" href="/acp/mode/addmodule">Add Module</a><a class="Link LButton" href="/acp/mode/editModule">Edit Module</a><a class="Link LButton" href="/acp/mode/modules">Module Settings </a><a class="Link LButton" href="/acp/mode/uploadMod">Upload Module </a><a class="Link LButton" href="/acp/mode/layout">Advanced Layout Editor</a>';
 		}
@@ -373,6 +377,9 @@ class admin {
 		if(isset($_GET['mode'])){
 			if($_GET['mode'] == 'users'){
 				$this->usr();
+			}
+			if($_GET['mode'] == 'update'){
+				$this->getUpdate();
 			}
 			if($_GET['mode'] == 'errors'){
 				$this->viewError();
@@ -1547,7 +1554,7 @@ class core {
 class install {
 	public function __construct($step){
 		$this->stage = $step;
-		$this->version = "CCMS6aCC1-5b";
+		$this->version = "CCMS9aCC2-7b";
 		list($usec, $sec) = explode(' ', microtime());
 	  $seed = (float) $sec + ((float) $usec * 100000);
 		mt_srand($seed);
@@ -1568,8 +1575,21 @@ class install {
 	    $path = pathinfo(realpath("upgrade.czip"), PATHINFO_DIRNAME);
 	    $f = $zip->open("upgrade.czip");
 	    if($f === true){
+				include('include/scripts/settings.php');
 	      $zip->extractTo($path);
 	      $zip->close();
+				$CurrentVer = file_get_contents("currentver.json");
+				$CurrentVer = json_decode($CurrentVer, true);
+				$CV = $CurrentVer['CurrentVer'];
+				$OV = '/'.$this->version.'/';
+				$dbc = mysqli_connect($settings['db_host'],$settings['db_user'],$settings['db_password'],$settings['db']);
+				$query = "SELECT `modifiers` FROM `settings`";
+				$data = mysqli_query($dbc, $query);
+				$row = mysqli_fetch_array($data);
+				$mods = $row['modifiers'];
+				$mods = preg_replace($OV, $CV, $mods);
+				$query = "UPDATE `settings` SET `modifiers` = '$mods'";
+				mysqli_query($dbc, $query);
 	      echo '<div class="shadowbar">Upgrade complete.</div>';
 	    }
 	  }

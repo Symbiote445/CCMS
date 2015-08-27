@@ -89,3 +89,16 @@ CREATE TABLE IF NOT EXISTS `views` (
   `count` int(11) NOT NULL,
   PRIMARY KEY (`vcid`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
+
+CREATE TABLE IF NOT EXISTS `groups` (
+  `groupID` int(11) NOT NULL AUTO_INCREMENT,
+  `groupName` text NOT NULL,
+  `groupPerms` text NOT NULL,
+  PRIMARY KEY (`groupID`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=5 ;
+
+INSERT INTO `groups` (`groupID`, `groupName`, `groupPerms`) VALUES
+(1, 'Default', 'forum.post'),
+(2, 'Trusted', 'forum.post;gallery.upload'),
+(3, 'Moderator', 'forum.mod;blog.write;forum.post;pages.addPage;core.mod;pages.editPage;gallery.*;dl.*;news.post'),
+(4, 'Admin', 'core.*;forum.*;blog.*;dl.*;pages.*;gallery.*;news.*');

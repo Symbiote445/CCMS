@@ -1,4 +1,7 @@
 <?php
+	if(!file_exists("include/scripts/settings.php")){
+		header('location:install.php');
+	}
 	error_reporting(E_ALL); ini_set("display_errors", 1);
 	define("CCore", true);
 	session_start();

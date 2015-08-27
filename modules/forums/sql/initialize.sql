@@ -47,3 +47,13 @@ CREATE TABLE IF NOT EXISTS `votes` (
   `poll` int(11) NOT NULL,
   PRIMARY KEY (`vid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE IF NOT EXISTS `fconf` (
+  `fsID` int(11) NOT NULL AUTO_INCREMENT,
+  `homeDisp` text NOT NULL,
+  `homeNum` int(11) NOT NULL,
+  PRIMARY KEY (`fsID`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=2 ;
+
+INSERT INTO `fconf` (`fsID`, `homeDisp`, `homeNum`) VALUES
+(1, 'posts', 5);

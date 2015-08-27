@@ -4,8 +4,12 @@ $blog = new blog($this->settings, $this->version, $this->dbc, $this->layout, $th
 if(isset($_GET['action']) && ($_GET['action'] == "Blog")){
 if(isset($_GET['action']) && !isset($_GET['mode'])){
 if($_GET['action'] === "Blog"){
-$blog->searchBar();
-$blog->viewBlog();
+	if(!isset($this->vars['blogInstalled'])){
+		$blog->blogInstall();
+	} else {
+		$blog->searchBar();
+		$blog->viewBlog();
+	}
 }
 $blog->blogAdminBar();
 }
@@ -41,6 +45,22 @@ class blog {
 		$this->core = $core;
 		$this->parser = $parser;
 
+	}
+	public function blogInstall(){
+		if(!isset($this->vars['blogInstalled'])){
+			//print_r($this->vars);
+			$sqlfile = 'include/scripts/blog/sql/initialize.sql';
+			$sql = file_get_contents($sqlfile);
+			mysqli_multi_query($this->dbc, $sql);
+			$query = "SELECT `modifiers` FROM `settings`";
+			$data = mysqli_query($this->dbc, $query);
+			$row = mysqli_fetch_array($data);
+			$mods = $row['modifiers'];
+			$mods = $mods.';varSet.blogInstalled:true';
+			$query = "UPDATE `settings` SET `modifiers` = '$mods'";
+			mysqli_query($this->dbc, $query);
+			echo '<div class="shadowbar">Blog installed, <a href="/Blog">Refresh</a></div>';
+		}
 	}
 	public function homepage(){
 		$query = "SELECT blog.*, users.* FROM blog INNER JOIN users ON users.uid = blog.user ORDER BY blog.id DESC LIMIT 3";

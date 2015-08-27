@@ -122,9 +122,12 @@ class Forums{
 			$sqlfile = 'include/scripts/forums/sql/initialize.sql';
 			$sql = file_get_contents($sqlfile);
 			mysqli_multi_query($this->dbc, $sql);
+			do {
+			    mysqli_use_result($this->dbc);
+			}while( mysqli_more_results($this->dbc) && mysqli_next_result($this->dbc) );
 			$query = "SELECT `modifiers` FROM `settings`";
-			$data = mysqli_query($this->dbc, $query);
-			$row = mysqli_fetch_array($data);
+			$data = mysqli_query($this->dbc, $query) or die(mysqli_error($this->dbc));
+			$row = mysqli_fetch_array($data) or die(mysqli_error($this->dbc));
 			$mods = $row['modifiers'];
 			$mods = $mods.';varSet.forumInstalled:true';
 			$query = "UPDATE `settings` SET `modifiers` = '$mods'";
